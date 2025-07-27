@@ -2,3 +2,6 @@ __pycache__/
 *.csv 
 *.xlsx 
 .ipynb_checkpoints/ 
+# data 폴더는 예외
+!data/
+!data/*.csv
