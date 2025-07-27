@@ -53,4 +53,4 @@
 12조 시비비빅  
 김도현, 박연서, 성소희, 이예란, 장정근
 
-[최종 발표자료 PDF 보기](docs/Zomato_Presentation.pdf)
+[Zomato 고객 분석 발표자료 PDF (71MB)](docs/Zomato_Presentation.pdf)
