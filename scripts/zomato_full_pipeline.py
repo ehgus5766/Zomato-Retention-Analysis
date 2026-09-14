@@ -36,6 +36,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = BASE_DIR / "outputs"
 OUTPUT_DIR.mkdir(exist_ok=True)
+DATA_DIR = BASE_DIR / "data"
 
 # 한글 폰트 설정
 plt.rcParams['font.family'] = 'Malgun Gothic'
@@ -44,11 +45,11 @@ matplotlib.rcParams['axes.unicode_minus'] = False
 warnings.filterwarnings("ignore")
 
 # 데이터 불러오기
-food_df = pd.read_csv("food.csv")
-menu_df = pd.read_csv("menu.csv")
-orders_df = pd.read_csv("orders.csv")
-restaurant_df = pd.read_csv("restaurant.csv")
-users_df = pd.read_csv("users.csv")
+food_df = pd.read_csv(DATA_DIR / "food.csv")
+menu_df = pd.read_csv(DATA_DIR / "menu.csv")
+orders_df = pd.read_csv(DATA_DIR / "orders.csv")
+restaurant_df = pd.read_csv(DATA_DIR / "restaurant.csv")
+users_df = pd.read_csv(DATA_DIR / "users.csv")
 
 ##users 전처리
 users_df.drop(columns=['Unnamed: 0', 'name', 'email', 'password'], inplace=True)
