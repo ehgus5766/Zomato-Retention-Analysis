@@ -1786,7 +1786,7 @@ test_idx = df_test.index
 
 #MLP용 데이터 증강을 위한 GAN사용
 
-df_gan = df_train[mlp_features + [target_col]].copy()
+df_ctgan = df_train[mlp_features + [target_col]].copy()
 df_ctgan_log = df_ctgan.copy()
 
 for col in log_transform_cols:
