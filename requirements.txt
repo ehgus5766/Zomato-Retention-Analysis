@@ -11,3 +11,4 @@ matplotlib
 seaborn
 statsmodels
 umap-learn
+tabulate
