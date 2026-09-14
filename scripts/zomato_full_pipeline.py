@@ -31,6 +31,12 @@ from tabulate import tabulate
 import time
 from xgboost import XGBClassifier
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = BASE_DIR / "outputs"
+OUTPUT_DIR.mkdir(exist_ok=True)
+
 # 한글 폰트 설정
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
@@ -127,8 +133,8 @@ replace_dict = {
 # 1. 쉼표가 포함된 경우 → 가장 마지막 값 (대도시) 기준
 cleaned_df['parsed_city'] = cleaned_df['city'].apply(lambda x: x.split(',')[-1].strip())
 
-# 2. replace_dict 기반 정제
-cleaned_df['parsed_city'] = cleaned_df['parsed_city'].replace(replace_dict)
+# 2. replace_di 기반 정제
+cleaned_df['parsed_city'] = cleaned_df['parsed_city'].replace(replace_di)
 
 # 3. 대소문자 및 공백 정리
 cleaned_df['parsed_city'] = cleaned_df['parsed_city'].str.strip().str.title()
@@ -959,7 +965,7 @@ exploded_df['region_categorized'] = exploded_df['cuisine_list'].apply(categorize
 # 이상치 리스트 (전처리된 기준)
 invalid_cuisines = [
     "8:15 to 11:30 pm",
-    "attractive combos available",
+    "attraive combos available",
     "biryani - shivaji military hotel",
     "bowl company",
     "code valid on bill over rs.99",
@@ -1062,7 +1068,7 @@ custom_category_map = {
     "tex-mex": "Western",
     "persian": "Middle Eastern",
     "tribal": "others",
-    "bakery products": "dessert",
+    "bakery produs": "dessert",
     "navratri special": "indian",
     "beverage": "beverages"
 }
@@ -1073,7 +1079,7 @@ def update_region_category(current_value):
 
 exploded_df['region_categorized'] = exploded_df['region_categorized'].apply(update_region_category)
 
-exploded_df = exploded_df[exploded_df['region_categorized'] != 'grocery products']
+exploded_df = exploded_df[exploded_df['region_categorized'] != 'grocery produs']
 
 exploded_df['region_categorized'] = exploded_df['region_categorized'].replace({
     "Western": "western",
@@ -1245,7 +1251,7 @@ def classify_spending(diff):
     if diff < -100:
         return 'under_spender'
     elif -100 <= diff <= 100:
-        return 'expected_level'
+        return 'expeed_level'
     elif 100 < diff <= 500:
         return 'premium_spender'
     else:
@@ -1411,7 +1417,7 @@ def make_final_merged_with_ltv_churn(orders_df, users_df, r_orders_final_df):
         last_order_date=('order_date', 'max'),
         avg_quantity_per_order=('sales_qty', 'mean'),
         total_quantity=('sales_qty', 'sum'),
-        active_days=('order_date', lambda x: (x.max() - x.min()).days),
+        aive_days=('order_date', lambda x: (x.max() - x.min()).days),
     )
 
     # 판매 금액 집계
@@ -1423,13 +1429,13 @@ def make_final_merged_with_ltv_churn(orders_df, users_df, r_orders_final_df):
     ltv_df = main_agg.join(sales_agg, how='left').reset_index()
     #  여기에 추가
     orders['order_day'] = orders['order_date'].dt.day_name()
-    most_active_weekday = (
+    most_aive_weekday = (
         orders.groupby(['user_id', 'order_day'])
         .size()
         .reset_index(name='count')
         .sort_values(['user_id', 'count'], ascending=[True, False])
         .drop_duplicates('user_id')[['user_id', 'order_day']]
-        .rename(columns={'order_day': 'most_active_weekday'})
+        .rename(columns={'order_day': 'most_aive_weekday'})
     )
     most_visited_restaurant = (
         orders.groupby(['user_id', 'r_id'])
@@ -1440,15 +1446,15 @@ def make_final_merged_with_ltv_churn(orders_df, users_df, r_orders_final_df):
         .rename(columns={'r_id': 'most_visited_restaurant'})
     )
     ltv_df = ltv_df.merge(most_visited_restaurant, on='user_id', how='left')
-    ltv_df = ltv_df.merge(most_active_weekday, on='user_id', how='left')
+    ltv_df = ltv_df.merge(most_aive_weekday, on='user_id', how='left')
     # 파생 변수 생성
 
     ltv_df["days_since_last_order"] = (reference_date - ltv_df["last_order_date"]).dt.days
-    ltv_df["recency_ratio"] = ltv_df["days_since_last_order"] / (ltv_df["active_days"] + 1)
+    ltv_df["recency_ratio"] = ltv_df["days_since_last_order"] / (ltv_df["aive_days"] + 1)
     ltv_df["revisit_count"] = ltv_df["total_order_count"] - 1
-    ltv_df["order_frequency"] = ltv_df["total_order_count"] / (ltv_df["active_days"] + 1)
-    ltv_df["monetary_per_day"] = ltv_df["total_sales_amount"] / (ltv_df["active_days"] + 1)
-    ltv_df["avg_days_between_orders"] = ltv_df["active_days"] / (ltv_df["revisit_count"].clip(lower=1))
+    ltv_df["order_frequency"] = ltv_df["total_order_count"] / (ltv_df["aive_days"] + 1)
+    ltv_df["monetary_per_day"] = ltv_df["total_sales_amount"] / (ltv_df["aive_days"] + 1)
+    ltv_df["avg_days_between_orders"] = ltv_df["aive_days"] / (ltv_df["revisit_count"].clip(lower=1))
     ltv_df["duration"] = (reference_date - ltv_df["last_order_date"]).dt.days
     ltv_df["churn"] = (ltv_df["duration"] > 100).astype(int)
 
@@ -1473,7 +1479,7 @@ ltv_features = delta_df.groupby('user_id').agg(
     last_order_date=('order_date', 'max'),
     avg_quantity_per_order=('sales_qty', 'mean'),
     total_quantity=('sales_qty', 'sum'),
-    active_days=('order_date', lambda x: (x.max() - x.min()).days),
+    aive_days=('order_date', lambda x: (x.max() - x.min()).days),
     revisit_count=('order_date', lambda x: x.nunique() - 1)
 ).reset_index()
 
@@ -1482,11 +1488,11 @@ latest_date = ltv_features['last_order_date'].max()
 ltv_features['days_since_last_order'] = (latest_date - ltv_features['last_order_date']).dt.days
 
 # 추가 파생변수 생성
-ltv_features['order_frequency'] = ltv_features['total_order_count'] / (ltv_features['active_days'] + 1)
-ltv_features['monetary_per_day'] = ltv_features['total_sales_amount'] / (ltv_features['active_days'] + 1)
-ltv_features['recency_ratio'] = ltv_features['days_since_last_order'] / (ltv_features['active_days'] + 1)
+ltv_features['order_frequency'] = ltv_features['total_order_count'] / (ltv_features['aive_days'] + 1)
+ltv_features['monetary_per_day'] = ltv_features['total_sales_amount'] / (ltv_features['aive_days'] + 1)
+ltv_features['recency_ratio'] = ltv_features['days_since_last_order'] / (ltv_features['aive_days'] + 1)
 ltv_features['revisit_rate'] = ltv_features['revisit_count'] / (ltv_features['total_order_count'] + 1)
-ltv_features['avg_days_between_orders'] = ltv_features['active_days'] / (ltv_features['total_order_count'] + 1)
+ltv_features['avg_days_between_orders'] = ltv_features['aive_days'] / (ltv_features['total_order_count'] + 1)
 
 # 1. user_id별로 Monthly Income 유일하게 추출
 income_per_user = delta_df[['user_id', 'Monthly Income']].drop_duplicates(subset='user_id')
@@ -1504,7 +1510,7 @@ ltv_features = ltv_features.merge(occupation_per_user, on='user_id', how='left')
 # ltv_features에 병합
 ltv_features = ltv_features.merge(gender_per_user, on='user_id', how='left')
 
-user_info = delta_df[['user_id', 'Marital Status', 'Educational Qualifications', 'most_active_weekday']].drop_duplicates(subset='user_id')
+user_info = delta_df[['user_id', 'Marital Status', 'Educational Qualifications', 'most_aive_weekday']].drop_duplicates(subset='user_id')
 
 # ltv_features에 병합
 ltv_features = ltv_features.merge(user_info, on='user_id', how='left')
@@ -1527,11 +1533,11 @@ age = delta_df[['user_id', 'Age']].drop_duplicates(subset='user_id')
 # ltv_features에 병합
 final_df = ltv_features.merge(age, on='user_id', how='left')
 
-# 리스트 또는 set, dict 같은 비해시형 객체를 포함한 컬럼 탐지
+# 리스트 또는 set, di 같은 비해시형 객체를 포함한 컬럼 탐지
 non_hashable_cols = []
 
 for col in delta_df.columns:
-    if delta_df[col].apply(lambda x: isinstance(x, (list, dict, set))).any():
+    if delta_df[col].apply(lambda x: isinstance(x, (list, di, set))).any():
         non_hashable_cols.append(col)
 
 print("🔍 리스트/딕셔너리/셋 타입을 포함한 컬럼들:")
@@ -1540,16 +1546,16 @@ print(non_hashable_cols)
 # 번호와 함께 컬럼명 나열
 for i, col in enumerate(final_df.columns):
     print(f"{i}. {col}")
-# 전체 범주형(object) 변수 목록 확인
+# 전체 범주형(obje) 변수 목록 확인
 from pandas.api.types import is_datetime64_any_dtype, is_categorical_dtype
 categorical_columns = [
     col for col in delta_df.columns
     if (
-        delta_df[col].dtype == 'object' or
+        delta_df[col].dtype == 'obje' or
         is_categorical_dtype(delta_df[col]) or
         is_datetime64_any_dtype(delta_df[col])
     )
-    and not delta_df[col].apply(lambda x: isinstance(x, (list, dict, set))).any()
+    and not delta_df[col].apply(lambda x: isinstance(x, (list, di, set))).any()
 ]
 # 유니크 값 개수도 함께 확인
 summary_df = pd.DataFrame({
@@ -1573,7 +1579,7 @@ df_orgin = df.copy()
 #####클러스터#####
 numerical_features_cl = [
     'total_sales_amount','total_order_count','avg_order_amount',
-    'avg_quantity_per_order','total_quantity','active_days',
+    'avg_quantity_per_order','total_quantity','aive_days',
     'order_frequency','monetary_per_day','days_since_last_order',
     'avg_days_between_orders','recency_ratio'
 ]
@@ -1584,7 +1590,7 @@ def calculate_vif_cl(df, features):
     X = df.copy()
     vif_data = pd.DataFrame()
     vif_data["feature"] = features
-    vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+    vif_data["VIF"] = [variance_inflation_faor(X.values, i) for i in range(X.shape[1])]
     return vif_data.sort_values(by="VIF", ascending=False)
 
 # 4. 전처리
@@ -1613,7 +1619,7 @@ plt.show()
 # 6. KMeans 클러스터링
 optimal_k = 3  # 적절히 수정 가능
 kmeans = KMeans(n_clusters=optimal_k, random_state=42)
-df['user_segment'] = kmeans.fit_predict(X_scaled)
+df['user_segment'] = kmeans.fit_predi(X_scaled)
 
 # 7. UMAP 2D 시각화
 umap_model = umap.UMAP(
@@ -1627,7 +1633,7 @@ df['umap1'], df['umap2'] = umap_result[:, 0], umap_result[:, 1]
 
 plt.figure(figsize=(8, 6))
 sns.scatterplot(data=df, x='umap1', y='umap2', hue='user_segment', palette='Set2', s=10)
-plt.title('KMeans Clustering Result (UMAP Projection)')
+plt.title('KMeans Clustering Result (UMAP Projeion)')
 plt.xlabel('UMAP 1')
 plt.ylabel('UMAP 2')
 plt.legend(title='Cluster')
@@ -1640,10 +1646,10 @@ umap_3d_result = umap_3d.fit_transform(X_scaled)
 df['umap1'], df['umap2'], df['umap3'] = umap_3d_result[:, 0], umap_3d_result[:, 1], umap_3d_result[:, 2]
 
 fig = plt.figure(figsize=(10, 7))
-ax = fig.add_subplot(111, projection='3d')
+ax = fig.add_subplot(111, projeion='3d')
 scatter = ax.scatter(df['umap1'], df['umap2'], df['umap3'],
                      c=df['user_segment'], cmap='Set2', s=10, alpha=0.6)
-ax.set_title('KMeans Clustering Result (UMAP 3D Projection)')
+ax.set_title('KMeans Clustering Result (UMAP 3D Projeion)')
 ax.set_xlabel('UMAP 1')
 ax.set_ylabel('UMAP 2')
 ax.set_zlabel('UMAP 3')
@@ -1661,8 +1667,8 @@ for cid, row in summary.iterrows():
     print(f"\n[클러스터 {cid}] (표본 수: {int(row['N'])})")
     for col in interpret_cols:
         diff = row[col] - global_avg[col]
-        direction = "높음 ↑" if diff > 0 else "낮음 ↓" if diff < 0 else "동일 ="
-        print(f"  - {col}: {row[col]:.2f} ({direction})")
+        direion = "높음 ↑" if diff > 0 else "낮음 ↓" if diff < 0 else "동일 ="
+        print(f"  - {col}: {row[col]:.2f} ({direion})")
 
 # 10. VIP 군집 산정
 vip_score_cols = [
@@ -1704,7 +1710,7 @@ df_scaled = pd.DataFrame(scaler.fit_transform(df_alpha[numerical_features_cl]), 
 def calculate_vif(df, features):
     vif_data = pd.DataFrame()
     vif_data["feature"] = features
-    vif_data["VIF"] = [variance_inflation_factor(df[features].values, i) for i in range(len(features))]
+    vif_data["VIF"] = [variance_inflation_faor(df[features].values, i) for i in range(len(features))]
     return vif_data.sort_values(by="VIF", ascending=False)
 
 # 4. VIF 계산 실행
@@ -1714,7 +1720,7 @@ print(vif_result)
 #입력 피처 정의
 numerical_features = [
     'total_sales_amount', 'avg_order_amount',
-    'avg_quantity_per_order', 'total_quantity','active_days',
+    'avg_quantity_per_order', 'total_quantity','aive_days',
      'order_frequency','monetary_per_day',
     'avg_days_between_orders'
  ] #수치형
@@ -1778,9 +1784,9 @@ y_test = df_test[target_col].values
 
 test_idx = df_test.index
 
-#MLP용 데이터 증강을 위한 CTGAN사용
+#MLP용 데이터 증강을 위한 GAN사용
 
-df_ctgan = df_base[mlp_features + [target_col]].copy()
+df_gan = df_train[mlp_features + [target_col]].copy()
 df_ctgan_log = df_ctgan.copy()
 
 for col in log_transform_cols:
@@ -1820,10 +1826,13 @@ print(df_synth_0['churn'].value_counts(normalize=True))
 scaler_mlp = StandardScaler()
 mlp_features = [col for col in mlp_features if col in df_mlp_train.columns]
 
-
+# 실제 train 데이터 기준으로 scaler 학습
 X_mlp_train = scaler_mlp.fit_transform(df_mlp_train[mlp_features])
+
+# test와 CTGAN 증강 데이터도 같은 기준으로 변환
 X_mlp_test = scaler_mlp.transform(df_mlp_test[mlp_features])
-X_mlp_gan = scaler_mlp.fit_transform(df_gan_augmented[mlp_features])
+X_mlp_gan = scaler_mlp.transform(df_gan_augmented[mlp_features])
+
 y_mlp_gan = df_gan_augmented[target_col].values
 
 scaler_xgb = StandardScaler()
@@ -2268,7 +2277,10 @@ merged_scaled_df = pd.concat([
 
 
 # 저장용 임시.
-merged_df.to_csv("C:/Users/malthael/Downloads/고니/최종_risk_포함_고객_데이터.csv", index=False)
+merged_df.to_csv(
+    OUTPUT_DIR / "final_risk_customer_data.csv",
+    index=False
+)
 # vip_segment별 이탈 위험도 분포 교차표
 cross_tab = pd.crosstab(risk_df['user_segment'], risk_df['risk_level'], normalize='index')
 
@@ -2474,7 +2486,10 @@ X_test_xgb_df = pd.DataFrame(X_xgb_test, columns=xgb_features)
 shap.summary_plot(shap_values, X_test_xgb_df, plot_type='bar')
 
 # CSV 저장(테스트 df으로만 합쳐있음)
-risk_df.to_csv("C:/Users/malthael/Downloads/고니/stacking_risk_prediction_with_vip.csv", index=False)
+risk_df.to_csv(
+    OUTPUT_DIR / "stacking_risk_prediction_with_vip.csv",
+    index=False
+)
 print(" 저장 완료: stacking_risk_prediction_with_vip.csv")
 
 
